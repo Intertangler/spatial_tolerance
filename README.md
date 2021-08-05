@@ -6,12 +6,27 @@ The code is designed to run on linux, though it may work on other operating syst
 
 # Installation instructions
 
-* Go to https://github.com/Intertangler/spatial_tolerance.git and download the whole folder.
+* Download the contents of this git repository (https://github.com/Intertangler/spatial_tolerance.git).
 * Extract the contents to a folder.
-* Create a Python 2.7 conda environment: conda create -n 210805codetest2 python=2.7.17
 * Navigate to the folder containing ST_environment.yml and ST_environment_xplatform.yml files
 * You may need to rename the "prefix" at the end of the yml file to specify the appropriate local folder: /home/user/miniconda3/envs/STenv
 * Create an environment called STenv with:     conda env create -f spatial_tolerance_environment.yml if you are on Linux or ST_environment_xplatform.yml if you are on another OS.
 * Navigate to the main spatial tolerance directory and start jupyter lab with the command: jupyter lab
 * From jupyter lab, navigate into each subfolder and start a notebook by doubleclicking.
 * The notebooks demonstrate the workflows used to generate the results and figures from the paper.
+* If you have problems setting up the environment this way, you may try to obtain the packages individually:
+
+dependencies:
+  - python=2.7
+  - jupyterlab
+  - matplotlib
+  - numpy
+  - scipy
+  - ipdb
+  - networkx
+  - pandas
+  - tqdm
+  - python-levenshtein
+  - biopython
+  - sympy
+  - svgwrite
