@@ -1,0 +1,18 @@
+name: STenv
+channels:
+  - defaults
+dependencies:
+  - python=2.7
+  - jupyterlab
+  - matplotlib
+  - numpy
+  - scipy
+  - ipdb
+  - networkx
+  - pandas
+  - tqdm
+  - python-levenshtein
+  - biopython
+  - sympy
+  - svgwrite
+prefix: /home/user/miniconda3/envs/seq2
