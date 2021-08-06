@@ -8,11 +8,11 @@ The code is designed to run on linux, though it may work on other operating syst
 
 ## System requirements
 ### Software dependencies and operating systems:
-'''Software has been tested on:'''
+#### Software has been tested on: ####
  Ubuntu 18.04.05
  macOS Mojave	10.14.6
  
-'''Python dependencies:'''
+#### Python dependencies: ####
   - python=2.7
   - jupyterlab
   - matplotlib
