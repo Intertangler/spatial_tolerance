@@ -11,6 +11,7 @@ The code is designed to run on linux, though it may work on other operating syst
 #### Software: ####
 - Python 2.7
 - Jupyter notebook / Jupyter lab
+- Anaconda 
 
 #### Operating system: ####
 - Ubuntu 18.04.05
