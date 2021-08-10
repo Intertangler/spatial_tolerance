@@ -49,6 +49,9 @@ The code is designed to run on linux, though it may work on other operating syst
   
 ## Demo
 To run our code, use the Jupyter notebooks provided which call functions from the respective libraries we have developed and which generate data, analyses, and figures such as those used in the manuscript.
+### Basic demo
+- Complete the basic demo by opening the folder _0_user_demo and running the CTMC_demo.ipynb jupyternotebook: https://github.com/Intertangler/spatial_tolerance/blob/master/_0_user_demo/CTMC_demo.ipynb
+- Follow the instructions in the notebook to create a transition matrix with user-defined antigen coordinates, simulate antibody dynamics with the enumerative/deterministic CTMC method, as well as simulate using the sampling-based Monte Carlo approach.
 ### Instructions to run on data
 #### Generating transition matrices
 - To generate the transition matrices including those featured in the publication or transition matrices for custom antigen patterns, go to folder 000_generate_transition_matrices and open the Jupyter notebook: https://github.com/Intertangler/spatial_tolerance/blob/master/000_generate_transition_matrices/generate_new_transition_matrix.ipynb 
