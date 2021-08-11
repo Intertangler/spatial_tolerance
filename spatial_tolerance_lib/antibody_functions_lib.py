@@ -1,24 +1,21 @@
 import os as os
 import numpy as np
-#import tqdm
 import ipdb
 import re
 import matplotlib.pyplot as plt
-#import networkx as nx
 from StringIO import StringIO
 import matplotlib.cm as cm
 from matplotlib.image import BboxImage,imread
-#from PIL import Image
-#import plotting_for_manuscript as plotms
 import random
-import time as time  # for creating dir with current time?
+import time as time  
 import datetime
 import scipy.optimize as opt
-# import math as math
 
 
-########### CREATE A NEW DIRECTORY WITH CURRENT DATE TIME AND NAME TAKEN AS AN INPUT ##############
 def create_directory(name):
+    """\
+    create a unique output directory for every new run with timestamp in name
+    """
     print('create_directory')
     global directory_name
     global today
@@ -29,6 +26,9 @@ def create_directory(name):
 
 
 def configure_space(cutoff_dist, coord_v, transition_m_name):
+    """\
+     use user input coordinates and user supplied cutoff distance to determine the neighbor-ship of antigens in the pattern
+    """
     site_status_v = np.zeros((len(coord_v)))
     dist_m = np.zeros((len(coord_v), len(coord_v)))
     neigh_m = np.zeros((len(coord_v), len(coord_v)))
@@ -45,15 +45,15 @@ def configure_space(cutoff_dist, coord_v, transition_m_name):
                 neigh_dir[pair2] = np.append(neigh_dir[pair2], np.array([pair1]))
             else:
                 pass
-
-    # plotting part
     plot_configure_space(coord_v, neigh_dir, transition_m_name)
 
-    # dist_m and neigh_m just initialized so maybe put them somewhere else?
     return site_status_v, dist_m, neigh_m, neigh_dir
 
 
 def get_state_id(site_status_v, pointer_v):
+    """\
+     return the state ID for a given set of site status information
+    """
     current_site_id = str()
     for i in range(0, len(site_status_v)):
         current_site_id = current_site_id + str(int(site_status_v[i])) + ','
@@ -64,12 +64,33 @@ def get_state_id(site_status_v, pointer_v):
 
 
 def generate_state_from_id(input_state_id):
+    """\
+     given an input state ID, output the corresponding site status information
+
+     Parameters
+     -------------
+     input_state_id 
+      the state ID for a given arrangement of antibodies for a particular pattern system
+    """
     new_site_status_v = np.fromstring(re.split('\n', input_state_id)[0], sep=",")
     new_pointer_v = np.fromstring(re.split('\n', input_state_id)[1], sep=",")
     return new_site_status_v, new_pointer_v
 
 
 def update_queue(state_id, bfsq, visited_nodes_list):
+    """\
+     update the bread-first-search queue based on an input state ID
+
+     Parameters
+     ------------
+     state_id
+        the state ID for a given arrangement of antibodies for a particular pattern system
+    bfsq
+        the breadth first search queue
+    visited_nodes_list
+        the list of states already discovered during the breadth first search
+
+    """
     if state_id in bfsq or state_id in visited_nodes_list:
         pass
     else:
@@ -77,10 +98,35 @@ def update_queue(state_id, bfsq, visited_nodes_list):
     return bfsq
 
 
-# def update_states(stateID,list_of_state_identifiers,transition_matrix,occupancy_key,distance_transition_matrix,
-#                   discoveries, site_status_vector, coordinate_vector, pointer_vector, transition_matrix_name):
-#     import ipdb
 def update_states(state_id, list_of_state_ids, transition_m, occ_key, dist_transition_m, site_status_v, coord_v, pointer_v, transition_m_name,particle_count_key):
+    """\
+     The primary record-keeping step. Updates the record with a newly discovered state, including new transition matrix data, occupancy information,
+     and particle count information.
+
+     Parameters
+     ------------
+     state_id
+       the state ID for a given arrangement of antibodies for a particular pattern system
+    list_of_state_ids
+        a list of all discovered state IDs
+    transition_m
+        transition matrix so far during the breadth first search
+    occ_key
+        the occupancy key - used to keep track of what occupancy a particular state corresponds to - e.g. two antibodies
+    dist_transition_m
+        the transition matrix with distance information used to determine the interconversion rates as a function of distance
+    site_status_v
+        the status of each site in a particular state i.e. monovalently bound, empty, etc...
+    coord_v
+        coordinates of the antigens
+    pointer_v
+        pointer for determining bivalent partnership, given one bivalently bound site, the location of its partner
+    transition_m_name
+        name of the transition matrix
+    particle_count_key
+        record for the number of particles contained in a given state
+     
+    """
     if state_id in list_of_state_ids:
         pass
     else:
@@ -152,10 +198,7 @@ def plot_update_states(coord_v, site_status_v, pointer_v, transition_m_name, lis
             plt.scatter(coord_v[site, 1], coord_v[site, 0], c='#5384C7', s=5000, alpha=1,
                         edgecolors='k', linewidth=12)
             edge_dist = np.sqrt(((coord_v[site, 1]) - coord_v[int(pointer_v[site]), 1]) ** 2 + ((coord_v[site, 0]) - coord_v[int(pointer_v[site]), 0]) ** 2)
-            # plt.text(np.mean([int(coord_v[site, 1]),coord_v[int(pointer_v[site]), 1]]),np.mean([int(coord_v[site, 0]),coord_v[int(pointer_v[site]), 0]]),str(edge_dist),fontsize=20)
-#             plt.plot([(coord_v[site, 1]), coord_v[int(pointer_v[site]), 1]],
-#                      [(coord_v[site, 0]), coord_v[int(pointer_v[site]), 0]],
-#                      'k', linewidth=35, alpha=1)
+
             plt.plot([(coord_v[site, 1]), coord_v[int(pointer_v[site]), 1]],
                      [(coord_v[site, 0]), coord_v[int(pointer_v[site]), 0]],
                      '#5384C7', linewidth=40, alpha=1)
@@ -166,12 +209,10 @@ def plot_update_states(coord_v, site_status_v, pointer_v, transition_m_name, lis
     if not os.path.exists(str(
             os.getcwd()) + '/' + 'state_configurations'):  # test to se if a folder for storing the data exists
         os.makedirs(str(os.getcwd()) + '/' + 'state_configurations')  # if no , create the folder
-    # ipdb.set_trace()
+
     if not os.path.exists(str(os.getcwd()) + '/' + 'state_configurations' + '/' + transition_m_name):  # test to se if a folder for storing the data exists
         os.makedirs(str(os.getcwd()) + '/' + 'state_configurations' + '/' + transition_m_name)  # if no , create the folder
     print(type(center_x))
-    # ipdb.set_trace()
-    # THE TWO LINES CAUSING ERRORS
 
     plt.savefig(str(os.getcwd()) + '/' + 'state_configurations' + '/' + transition_m_name + '/' + transition_m_name +
                 str((len(list_of_state_ids) + 1)) + ".png")
@@ -179,9 +220,7 @@ def plot_update_states(coord_v, site_status_v, pointer_v, transition_m_name, lis
                 transition_m_name + str((len(list_of_state_ids) + 1)) + ".svg"))
 
     plt.show()
-    # END OF TWO LINES CAUSING ERRORS
     plt.close()
-#     ipdb.set_trace()
 
 def my_plot_format(SMALL_SIZE, MEDIUM_SIZE, BIGGER_SIZE):
     # SMALL_SIZE = 10
@@ -214,8 +253,6 @@ def plot_configure_space(coord_v, neigh_dir, transition_m_name):
                      alpha=1)
             plt.scatter(coord_v[:, 1], coord_v[:, 0], marker='o', s=2000, facecolors='#BF3A1A',
                 edgecolors='k', linewidth=10)
-#             plt.scatter(coord_v[:, 1], coord_v[:, 0], marker='o',s=2000, c='#BF3A1A',
-#                 linewidth=30)
             
     if not os.path.exists(str(
             os.getcwd()) + '/' + 'State_Space'):  # test to se if a folder for storing the data exists
@@ -227,7 +264,6 @@ def plot_configure_space(coord_v, neigh_dir, transition_m_name):
                     'State_Space/' + transition_m_name)  # if no , create the folder
     plt.xlabel('x position [nm]')
     plt.ylabel('y position [nm]')
-#     plt.scatter(coord_v[:, 1], coord_v[:, 0], c='w', s=2000)
     plt.ylim(np.min([coord_v[:, 0], coord_v[:, 1]]) - 6,
              np.max([coord_v[:, 0], coord_v[:, 1]]) + 6)
     plt.xlim(np.min([coord_v[:, 0], coord_v[:, 1]]) - 6,
@@ -296,7 +332,6 @@ def transition_m_continuous(coord_v, site_status_v, neigh_dir, dist_m, transitio
             if current_site_state == 1:
                 for decision in range(1,3):
                     if decision == 1:
-#                         import pdb; pdb.set_trace()
                         try:
                             neigh_options = neigh_dir[current_site][1:]
                         except:
@@ -357,8 +392,6 @@ def transition_m_continuous(coord_v, site_status_v, neigh_dir, dist_m, transitio
                             # was exhausted without finding a viable neighbor, and bivalent_conversion
                             # switch was never flipped
                             decision = 2
-                            # print 'no neighbor found, new decision =', decision
-                            # print 'monovalent removal - no bivalent candidate found' # since no candidate for a
                             # bivalent addition was found, the only remaining option to continue state exploration
                             # is by removing the monovalently bound antibody that we discovered in this site
                             # update status of converted mono to empty site
@@ -459,7 +492,6 @@ def transition_m_continuous(coord_v, site_status_v, neigh_dir, dist_m, transitio
                 transition_m[from_state_index, to_state_index] = k_on
                 transition_m[to_state_index, from_state_index] = k_off  # by symmetry, we can add the reverse
                 # transition each time this happens as well!
-                # print transition_matrix
 
                 bfsq = update_queue(list_of_state_ids.index(current_globalstate_id), bfsq, visited_states)
                 site_status_v, pointer_v = generate_state_from_id(revert_state_id)  # REVERT!
@@ -492,7 +524,6 @@ def transition_m_continuous(coord_v, site_status_v, neigh_dir, dist_m, transitio
     np.savetxt(str(os.getcwd()) + '/' + 'transition_matrices' + '/' + str(transition_m_name) + 'occupancy_key', occupancy_key)
     np.savetxt(str(os.getcwd()) + '/' + 'transition_matrices' + '/' + str(transition_m_name) + 'particle_count_key', particle_count_key)
     np.savetxt(str(os.getcwd()) + '/' + 'transition_matrices' + '/' + str(transition_m_name) + 'distance_transition_matrix', dist_transition_m)
-    #plot_transition_m_continuous(transition_m, occupancy_key, transition_m_name, dist_transition_m)
 
 
 def plot_transition_m_continuous(transition_m, occupancy_key, transition_m_name, dist_transition_m):
@@ -507,11 +538,10 @@ def plot_transition_m_continuous(transition_m, occupancy_key, transition_m_name,
     fig = plt.figure(figsize=(50, 50))
     ax = fig.add_subplot(111)
     ax.imshow(transition_m, interpolation='nearest', cmap='terrain_r')
-    # plt.colorbar(label='transition rate \n $\lambda ^{.25}$')
-    # ax.set_xlabel("to state
+
     ax.set_xlabel('to state j ', fontsize=200)
     ax.xaxis.set_label_coords(.5, -0.05)
-    # ax.axis('off')
+
     ax.set_ylabel('from state i', fontsize=200)
     ax.yaxis.set_label_coords(-0.05, .5)
     startx, endx = ax.get_xlim()
@@ -559,7 +589,6 @@ def plot_transition_m_continuous(transition_m, occupancy_key, transition_m_name,
 def visualize_state_space_network(occupancy_key, transition_m, transition_m_name):
     labels = {}
     G = nx.DiGraph()
-    # my_plot_format(20, 20, 30)
     for node in range(0, len(occupancy_key)):
         labels[node] = "$" + str(int(occupancy_key[node])) + "$"
         G.add_node(1)
@@ -586,7 +615,6 @@ def visualize_state_space_network(occupancy_key, transition_m, transition_m_name
     edgelabels = {}
     for u, v, data in G.edges(data=True):
         edgelabels[(u, v)] = data['rate']
-    # G=nx.from_numpy_matrix(transition_matrix)
     val_map = {'A': 1.0,
                'D': 0.5714285714285714,
                'H': 0.0}
@@ -804,25 +832,12 @@ def make_bar_chart_of_states(probabilityVectors,directory_name,transition_matrix
            )
     fnames = []
     for bar_state in ((range(0, state_truncation_value))):
-        # lowerCorner = ax.transData.transform(
-        #     (0, 100 * np.max(final_ranked_state_probabilities[:, 0])))
-        # upperCorner = ax.transData.transform((bar_state + 1, 0))
-        # limits = ax.transData.transform((state_truncation_value * 1.05, state_truncation_value * 1.075))
-        # bbox_image = BboxImage(Bbox([[lowerCorner[0] + bar_state * limits[0] / state_truncation_value,
-        #                               upperCorner[1]+80],
-        #                              [lowerCorner[0] + bar_state * limits[0] / state_truncation_value + 80,
-        #                               upperCorner[1] - 0],
-        #                              ]),
-        #                        norm=None,
-        #                        origin=None,
-        #                        clip_on=False)
+
         img = imread(os.getcwd() + '/' + 'state_configurations/' + str(transition_matrix_name_) + '/' + str(
             transition_matrix_name_) + str(labels[bar_state]) + '.png')
         fname = os.getcwd() + '/' + 'state_configurations/' + str(transition_matrix_name_) + '/' + str(
             transition_matrix_name_) + str(labels[bar_state]) + '.png'
         fnames = fnames + [fname]
-        # bbox_image.set_data(img)
-        # ax.add_artist(bbox_image)
         montage = make_contact_sheet(fnames, (len(final_ranked_state_probabilities[:, 0]),1), (80, 80),
                            (0, 0, 0, 0),
                            0)
@@ -879,15 +894,14 @@ def print_stacked_occupancy_curves(timeSamples, directory_name, run_name,probabi
         colors[state]= cm.get_cmap('Spectral')(random.random())
     ax.stackplot(range(timeSamples + 1), weighted_probability_vectors,colors=colors)
 
-    # for state in range(0,len(occupancy_key)):
-        # plt.plot(range(timeSamples + 1), probabilityVectors[:,state]*occupancy_key[state], label='theor. occupancy', linestyle='-',lw=1)
+
     plt.ylabel("occupancy [AB's/structure]")
     plt.ylim((0, 4.0))
     plt.xlabel("t (sec)")
     plt.xlim((0, timeSamples+1))
     plt.tight_layout()
     handles, labels = ax.get_legend_handles_labels()
-    # ax.legend(handles, labels)#bbox_to_anchor=(0.1, 1.02), loc=3, borderaxespad=0., fontsize=12)
+
 
     plt.savefig(str(os.getcwd()) + '/' + str(directory_name) + '/' + str(today) + str(
         transition_matrix_name_) + "stacked_trajectory" + str(run_name) + str(time.time()) + ".png")
@@ -901,8 +915,6 @@ def print_stacked_macro_occupancy_curves(timeSamples, directory_name, run_name,p
 
     print('print_stacked_macro_occupancy_curves')
     random.seed(a=2)
-
-    # ipdb.set_trace()
     plotms.occupancy_curve()
 
     fig, ax = plt.subplots()
@@ -913,20 +925,13 @@ def print_stacked_macro_occupancy_curves(timeSamples, directory_name, run_name,p
         colors[i-1] = cm.get_cmap('inferno')(1./i)
     for state in range (0,len(occupancy_key)):
         weighted_probability_vectors[int(occupancy_key[state])] = weighted_probability_vectors[int(occupancy_key[state])]+probabilityVectors[:,state]*occupancy_key[state]
-        # colors[int(occupancy_key[state])]= cm.get_cmap('Jet')(random.random())
     ax.stackplot(range(timeSamples + 1), weighted_probability_vectors,colors=colors)
 
-
-    # for state in range(0,len(occupancy_key)):
-        # plt.plot(range(timeSamples + 1), probabilityVectors[:,state]*occupancy_key[state], label='theor. occupancy', linestyle='-',lw=1)
     plt.ylabel("occupancy [AB's/structure]")
     plt.ylim((0, 4.0))
     plt.xlabel("t (sec)")
     plt.xlim((0, timeSamples+1))
     plt.tight_layout()
-    # handles, labels = ax.get_legend_handles_labels()
-    # plt.legend(bbox_to_anchor=(0.1, 1.02), loc=3, borderaxespad=0., fontsize=12)
-    # ax.legend()#bbox_to_anchor=(0.1, 1.02), loc=3, borderaxespad=0., fontsize=12)
 
     plt.savefig(str(os.getcwd()) + '/' + str(directory_name) + '/' + str(today) + str(
         transition_matrix_name_) + "macrostacked_trajectory" + str(run_name) + str(time.time()) + ".png")
@@ -949,22 +954,13 @@ def print_stacked_macroprobability_curves(timeSamples, directory_name, run_name,
         colors[i] = cm.get_cmap('inferno')(1./(i+1))
     for state in range (0,len(occupancy_key)):
         macro_probability_vectors[int(occupancy_key[state])] = macro_probability_vectors[int(occupancy_key[state])]+probabilityVectors[:,state]
-        # weighted_probability_vectors[state] = probabilityVectors[:,state]*occupancy_key[state]
-        # colors[state]= cm.get_cmap('Spectral')(random.random())
 
     ax.stackplot(range(timeSamples + 1), macro_probability_vectors,colors=colors)
-
-    # for state in range(0,len(occupancy_key)):
-        # plt.plot(range(timeSamples + 1), probabilityVectors[:,state]*occupancy_key[state], label='theor. occupancy', linestyle='-',lw=1)
     plt.ylabel("p")
     plt.ylim((0, 1.0))
     plt.xlabel("t (sec)")
     plt.xlim((0, timeSamples+1))
     plt.tight_layout()
-
-    # plt.legend(handles=)
-
-    # ax.legend(handles, labels)#bbox_to_anchor=(0.1, 1.02), loc=3, borderaxespad=0., fontsize=12)
 
     plt.savefig(str(os.getcwd()) + '/' + str(directory_name) + '/' + str(today) + str(
         transition_matrix_name_) + "stacked_probability" + str(run_name) + str(time.time()) + ".png")
@@ -977,27 +973,18 @@ def print_stacked_macroprobability_curves(timeSamples, directory_name, run_name,
 def print_stacked_probability_curves(timeSamples, directory_name, run_name,probabilityVectors,occupancy_key,transition_matrix_name_):
     print('print_stacked_probability_curves')
     random.seed(a=2)
-    # ipdb.set_trace()
     plotms.occupancy_curve()
 
     fig, ax = plt.subplots()
     colors = np.zeros((len(occupancy_key)),np.ndarray)
     for state in range (0,len(occupancy_key)):
-        # weighted_probability_vectors[state] = probabilityVectors[:,state]*occupancy_key[state]
         colors[state]= cm.get_cmap('Spectral')(random.random())
-    # ipdb.set_trace()
     ax.stackplot(range(timeSamples + 1), probabilityVectors.T,colors=colors)
-
-    # for state in range(0,len(occupancy_key)):
-        # plt.plot(range(timeSamples + 1), probabilityVectors[:,state]*occupancy_key[state], label='theor. occupancy', linestyle='-',lw=1)
     plt.ylabel("p")
     plt.ylim((0, 1.0))
     plt.xlabel("t (sec)")
     plt.xlim((0, timeSamples+1))
     plt.tight_layout()
-    # plt.legend(handles=)
-
-    # ax.legend(handles, labels)#bbox_to_anchor=(0.1, 1.02), loc=3, borderaxespad=0., fontsize=12)
 
     plt.savefig(str(os.getcwd()) + '/' + str(directory_name) + '/' + str(today) + str(
         transition_matrix_name_) + "stacked_probability" + str(run_name) + str(time.time()) + ".png")
@@ -1028,7 +1015,6 @@ def print_occupancy_dissection_curves(directory_name,today,transition_matrix_nam
     print('print_occupancy_dissection_curves')
     color = plt.cm.jet(np.linspace(0, 1, 7))
     sumcurve = np.zeros((len(probabilityVectors[:, 0]), int(np.max(occupancy_key) + 1)))
-    # sumcurve_occupancy_key =  np.zeros((np.max(occupancy_key)+1))
     print(np.max(occupancy_key))
     for curve in range(0, len(stateLabels)):
         sumcurve[:, int(occupancy_key[curve])] = sumcurve[:, int(occupancy_key[curve])] + probabilityVectors[:, curve]
@@ -1105,7 +1091,6 @@ def SPR_run(optimization_params,fixed_params):
         print_stacked_occupancy_curves(timeSamples, occupancy, directory_name, run_name,probabilityVectors,occupancy_key,transition_matrix_name_)
 
     else: pass
-    # print (1-np.absolute((np.exp(optimization_params[1]))))*1E-03, (1-np.absolute((np.exp(optimization_params[2]))))*5.96E-03
 
     return master_error
 
@@ -1117,7 +1102,7 @@ def constraint_equation(variable_parameters,otherargs):#enable this function in 
         above_zero_criterion = 1.
     else:
         above_zero_criterion = np.log(variable_parameters[1] / np.exp(variable_parameters[0])) - np.log(1e-14)
-    # ipdb.set_trace()
+
     return above_zero_criterion
 
 
@@ -1151,17 +1136,13 @@ def fit_to_experimental_data(variable_and_fixed_parameters,run_data__,transition
             opt.fmin_slsqp(SPR_run,
                       variable_parameters_numbers_only,
                       args=([variable_and_fixed_parameters,index_of_fixed_params[0],index_of_variable_params[0],run_name,'standard',distance_transition_matrix],),#note that you need the ,) on the end bc its a tuple
-                      #ftol=.0000001,
-                      # callback=callbackF,
-                      #maxiter=500,
+
                       acc=0.000000001,
                       full_output=True,
                       epsilon=.01,
                       ieqcons=[constraint_equation],
                       bounds=variable_parameter_bounds,
-                      #acc=0.1,
-                      # full_output=True,
-                      #retall=False
+
                       )
         print_graph_ = True
 
@@ -1174,8 +1155,7 @@ def fit_to_experimental_data(variable_and_fixed_parameters,run_data__,transition
                                                                                             run_data=run_data_,
                                                                                             optimization_params=fixed_params_array)
         single_run_no_fit(fixed_params_array,transition_matrix_,occupancy_key_,print_graph=True,non_monovalent=non_monovalent_,transition_matrix_name__=transition_matrix_name_,program='standard',run_name=run_name,actual_run=actual_run)
-        # SPR_run(fixed_params_array,
-        #         [variable_and_fixed_parameters, index_of_fixed_params[0], index_of_variable_params[0], run_name])
+
     return fixed_params_array
 
 
@@ -1184,26 +1164,17 @@ def single_run_no_fit(rate_constants, transition_matrix, occupancy_key ,print_gr
     transition_matrix_name_ = transition_matrix_name__
 
     stateLabels = np.arange(len(transition_matrix))
-    #probability vector initialization - this occurs outside the multiconcentration experiment loop
 
-
-    #probabilityVectors[0][:]+1.0/len(probabilityVectors[0][:])#1.0000  # because everything is starting in state 0 at the beginning of the run
-
-    #initialize the experimental conditions:
     timeSamples, time_points, concentrations, probabilityVectors, timeInterval = spr_program(program=program,state_labels=stateLabels,
                                                                                              time_samples=timeSamples,ssc=steadyStateConcentration) #timeSamples=2869
-      # seconds
-    # initialize the occupancy vector as well
+
     occupancy = np.zeros((timeInterval))
     deltat = 1.0
     probabilityVectors, occupancy = compute_transient_probabilities(time_points,concentrations,[np.exp(rate_constants[0]),rate_constants[1],rate_constants[2],rate_constants[3]],non_monovalent,transition_matrix,probabilityVectors,occupancy,occupancy_key,distance_transition_matrix,deltat=1.0,iteration_depth=20)
     if print_graph == True:
-        #print out the stateID's of states with the greatest
         # probability so that we can find images of their configuration
         np.savetxt(str(os.getcwd()) + '/' + (directory_name) + '/' + str(today) + 'probability_vectors' + str(
             time.time()) + '.txt', probabilityVectors, delimiter=';')
-
-        # make_bar_chart_of_states(probabilityVectors,directory_name,transition_matrix_name_)
 
 
         if actual_run == None:
