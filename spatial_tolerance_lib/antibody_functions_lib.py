@@ -125,7 +125,19 @@ def update_states(state_id, list_of_state_ids, transition_m, occ_key, dist_trans
         name of the transition matrix
     particle_count_key
         record for the number of particles contained in a given state
-     
+        
+    Returns
+    ------------   
+    list_of_state_ids
+        updated list of all discovered state IDs
+    transition_m
+        updated transition matrix so far during the breadth first search
+    occ_key
+        updated occupancy key - used to keep track of what occupancy a particular state corresponds to - e.g. two antibodies
+    dist_transition_m
+        updated transition matrix with distance information used to determine the interconversion rates as a function of distance
+    particle_count_key
+        updated record for the number of particles contained in a given state
     """
     if state_id in list_of_state_ids:
         pass
@@ -170,17 +182,30 @@ def update_states(state_id, list_of_state_ids, transition_m, occ_key, dist_trans
 
 
 def plot_update_states(coord_v, site_status_v, pointer_v, transition_m_name, list_of_state_ids):
+    """\
+    produce a schematic image of new state based on pattern geometry and the site states information 
 
+    Parameters
+    ------------
+    coord_v
+        coordinates of the antigens
+    site_status_v
+        the status of each site in a particular state i.e. monovalently bound, empty, etc...
+    pointer_v
+        pointer for determining bivalent partnership, given one bivalently bound site, the location of its partner
+    transition_m_name
+        name of the transition matrix        
+    list_of_state_ids
+        a list of all discovered state IDs
+    """
     plt.figure(figsize=(5, 5))
     my_plot_format(20, 20, 30)
-#     ipdb.set_trace()
     span_of_y = np.max([coord_v[:, 0], coord_v[:, 1]]) - np.min([coord_v[:, 0], coord_v[:, 1]])
     span_of_x = np.max([coord_v[:, 0], coord_v[:, 1]]) - np.min([coord_v[:, 0], coord_v[:, 1]])
     center_x = span_of_x / 2
     center_y = span_of_y / 2
     plt.scatter(coord_v[:, 1], coord_v[:, 0], marker='o', s=2000, facecolors='#BF3A1A',
                 edgecolors='k', linewidth=10)
-    # plt.title('antibody binding state' + str(stateID))
     plt.ylim(center_y - span_of_y / 2 - 4, center_y + span_of_y / 2 + 4)
     plt.xlim(center_x - span_of_x / 2 - 4, center_x + span_of_x / 2 + 4)
 
@@ -239,6 +264,18 @@ def my_plot_format(SMALL_SIZE, MEDIUM_SIZE, BIGGER_SIZE):
 
 
 def plot_configure_space(coord_v, neigh_dir, transition_m_name):
+    """\
+    produce a schematic image of pattern configuration, i.e. not a state but the base geometry
+
+    Parameters
+    ------------
+    coord_v
+        coordinates of the antigens
+    neigh_dir
+        a matrix of neighbor information to determine which sites can be connected via bivalent binding
+    transition_m_name
+        name of the transition matrix     
+    """    
     plt.figure(figsize=(5, 5))
 
     for i in range(0, len(coord_v)):
@@ -276,6 +313,24 @@ def plot_configure_space(coord_v, neigh_dir, transition_m_name):
 
 
 def intersect(p1,p2,p3,p4):
+    """\
+    determine if two lines intersect - used for determining the existence of obstructions when deciding bivalent binding or not
+
+    Parameters
+    ------------
+    p1
+        point 1
+    p2
+        point 2
+    p3
+        point 3
+    p4
+        point 4
+    Returns
+    ------------ 
+    Boolean - true or false
+        depending on whether interesction exists or not
+    """       
     x1,x2,x3,x4 = p1[0],p2[0],p3[0],p4[0]
     y1,y2,y3,y4 = p1[1],p2[1],p3[1],p4[1]
     if max(x1, x2) < min(x3, x4):
@@ -296,6 +351,23 @@ def intersect(p1,p2,p3,p4):
 
 
 def transition_m_continuous(coord_v, site_status_v, neigh_dir, dist_m, transition_m_name):
+    """\
+    Main breadth first search function. 
+    Builds a transition matrix based on continuum of bivalent interconversion rates according to arbitrary separation distances.
+
+    Parameters
+    ------------
+    coord_v
+        coordinates of the antigens
+    site_status_v
+        the status of each site in a particular state i.e. monovalently bound, empty, etc...        
+    neigh_dir
+        a matrix of neighbor information to determine which sites can be connected via bivalent binding
+    dist_m
+        distance matrix indicating relative separation distances of each site
+    transition_m_name
+        name of the transition matrix     
+    """       
     # -0.42 if no bivalent coupling, pointer to a friend otherwise
     pointer_v = np.ones((len(coord_v))) * -0.42
     current_globalstate_id = get_state_id(site_status_v, pointer_v)
@@ -527,6 +599,20 @@ def transition_m_continuous(coord_v, site_status_v, neigh_dir, dist_m, transitio
 
 
 def plot_transition_m_continuous(transition_m, occupancy_key, transition_m_name, dist_transition_m):
+    """\
+    Create an output image of the transition matrix.
+
+    Parameters
+    ------------
+    transition_m
+        the transition matrix
+    occupancy_key
+        the occupancy key - used to keep track of what occupancy a particular state corresponds to - e.g. two antibodies 
+    transition_m_name
+        name of the transition matrix 
+    dist_transition_m
+        transition matrix with information about the distances between sites
+    """         
     count = 0
     for i in range(len(transition_m)):
         for j in range(len(transition_m)):
@@ -587,6 +673,18 @@ def plot_transition_m_continuous(transition_m, occupancy_key, transition_m_name,
 
 
 def visualize_state_space_network(occupancy_key, transition_m, transition_m_name):
+    """\
+    Create a graph visualization of the state space and its interlinking transitions.
+
+    Parameters
+    ------------
+    occupancy_key
+        the occupancy key - used to keep track of what occupancy a particular state corresponds to - e.g. two antibodies 
+    transition_m
+        the transition matrix
+    transition_m_name
+        name of the transition matrix 
+    """    
     labels = {}
     G = nx.DiGraph()
     for node in range(0, len(occupancy_key)):
@@ -629,8 +727,20 @@ def visualize_state_space_network(occupancy_key, transition_m, transition_m_name
     plt.close()
 
 
-def alpha(distance): # the function which determines the distance dependence of k mono to bi,
+def alpha(distance): 
+    """\
+    Legacy function - the function which determines the distance dependence of k mono to bi
 
+    Parameters
+    ------------
+    distance
+        separation distance between two antigens
+        
+    Returns
+    ------------        
+    a
+        the coefficient to be multiplied with interconversion rate according to separation distance
+    """  
     if distance >= 0 and distance < 2:
         slope_m = .0553
         intercept_b = -2.082e-17

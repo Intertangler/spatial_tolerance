@@ -25,17 +25,30 @@ def get_save_directory(name):
     os.makedirs(directory_name)
     return directory_name
 
-# ### DELETE THIS
-# def fetch_and_normalize_data(data_file_path, normalize_const):
-#     # ipdb.set_trace()
-#     with open(str(data_file_path), 'r') as dataFile:
-#         data1 = dataFile.read()
-#     actual_run = np.genfromtxt(StringIO(data1), delimiter="\n")
-#     actual_run = actual_run / (normalize_const) * 1
-#     return actual_run
-
-    # return np.genfromtxt(StringIO(data), delimiter='\n') / normalize_const
 def compute_KD(parameters):
+    """\
+    compute the interconversion factor based on analytical spatial tolerance model parameters
+
+    Parameters
+    ------------
+    l_t
+        tension characteristic length term
+    alpha_t
+        tension modulus term
+    l_c
+        compression characteristic length term
+    alpha_c
+        compression modulus term
+    KD2max
+        max KD2 value
+    distances
+        range of input separation distances
+        
+    Returns:
+    -----------
+    combine
+        range of KD2 values corresponding to input distances and the combine impact of compression and tension terms of spatial tolerance
+    """
     l_t,alpha_t,l_c,alpha_c,KD2max,distances = parameters
     compression = KD2max*np.exp(-1*alpha_c*distances-l_c)
     tension = KD2max/(1+np.exp(-1*alpha_t*(distances-l_t)))
@@ -46,11 +59,40 @@ def compute_KD(parameters):
 
 
 class Simulation:
+    """\
+    Template for a stand-alone simulation instance.
 
+    """
     # attributes of the pattern are its name and coordinates
     def __init__(self, transition_matrix_name, mono_rates, KD_fx, concentrations, time_points, final_time = 2869,output_dir="output",experiment_name = "ctmc",Temp = 298,kB = 1.3806e-23):
-        #define the whole minimization system as a whole:
-        # ipdb.set_trace()  # start of the init
+        """
+        Attributes
+        ------------
+        transition_matrix_name
+            name of the corresponding transition matrix for the pattern to be simulated
+        mono_rates
+            k1 and k-1 rates
+        KD_fx
+            analytical function parameters for bivalent interconversion
+        concentrations
+            list of concentrations corresponding to different injection steps during the run
+        time_points
+            list of time points corresponding to different injection steps during the run
+
+        Keyword arguments
+        ------------
+        final_time
+            final timepoint of the simulation
+        output_dir
+            default output directory
+        experiment_name
+            name of experiment
+        Temp
+            temperature, default set to 298 Kelvin
+        kB
+            Boltzmann constant        
+
+        """
         self.Temp = Temp  # kelvin
         self.kB = kB  # J /K / particle
         self.mu_mono = 1.805e-20 #J/antibody
@@ -86,6 +128,15 @@ class Simulation:
         self.print_graph = False
 
     def uniformize(self, trm):
+        """
+        performs transition matrix uniformization operation
+        
+        Parameters:
+        -----------
+        trm
+            transition rate matrix to be uniformized
+        
+        """
         infinitessimal_generator_matrix = np.zeros((len(trm), len(trm)))
         for j in range(len(trm)):
             for m in range(len(trm)):
@@ -97,6 +148,21 @@ class Simulation:
         return np.identity(len(trm)) + infinitessimal_generator_matrix / self.uniformization_rate
 
     def trm(self, rate_on, rate_off):
+        """
+        Assemble transition rate matrix from analytical KD2 function
+        
+        Parameters:
+        -----------
+        rate_on
+            k_1 binding rate monovalent
+        rate_off
+            k_-1 dissociation rate monovalent
+        
+        Return
+        -----------
+        transition_rate_matrix
+            a transition rate matrix populated with entries according to separation distance and input rates
+        """        
         kbm = 0.19781887754
         transition_rate_matrix = np.zeros((len(self.transition_matrix), len(self.transition_matrix)))
         for i in range(0, len(self.transition_matrix)):
@@ -123,6 +189,19 @@ class Simulation:
     #### EQUILIBRUM CALCULATIONS #####
 
     def infinitessimal_generator_matrix(self,trm):
+        """
+        Assemble infinitessimal generator matrix from an input transition rate matrix.
+        
+        Parameters:
+        -----------
+        trm
+            the input transition rate matrix
+        
+        Return
+        -----------
+        infinitessimal_generator_matrix
+            the output infinitessimal generator matrix corresponding to the supplied rate matrix
+        """            
         infinitessimal_generator_matrix = np.zeros((len(trm), len(trm)))
         for j in range(len(trm)):
             for m in range(len(trm)):
@@ -133,23 +212,75 @@ class Simulation:
         return infinitessimal_generator_matrix
 
     def get_stationary_dist(self, guess_p_vector, args):
+        """
+        Objective function used to evaluate whether stationary distribution has been found.
+        
+        Parameters:
+        -----------
+        guess_p_vector
+            guess a probability distribution that will be iteratively modified until it satisfies sationarity
+        args
+            additional arguments - Q the infinitessimal generator matrix
+            
+        Return
+        -----------
+        stability_cond
+            the objective function value to be minimized to determine stationarity
+        """            
         guess_p_vector = 10**guess_p_vector
         Q = args
         stability_cond = np.sum(1+np.abs(np.dot(np.abs(np.nan_to_num(guess_p_vector)), Q)))**2
-#         ipdb.set_trace()
         return stability_cond
 
     def normalization_condition(self,guess_p_vector):
+        """
+        A constraint - all probabilities must sum to 1 
+        
+        Parameters:
+        -----------
+        guess_p_vector
+            the supplied probability distribution
+        
+        Return
+        -----------
+        norm_cond
+            objective function output that must satisfy constraint
+        """    
         guess_p_vector = 10**guess_p_vector
         norm_cond = (np.sum(np.abs(guess_p_vector))-1)*100000
         return norm_cond
     def explosive_p_condition(self,guess_p_vector):
+        """
+        A constraint - probabilities must not explode
+        
+        Parameters:
+        -----------
+        guess_p_vector
+            the supplied probability distribution
+        
+        Return
+        -----------
+        product
+            objective function output that must satisfy constraint
+        """            
         guess_p_vector = 10**guess_p_vector
         product = np.abs(np.prod(guess_p_vector))*10**(len(guess_p_vector))
         return product
-    
-    # def con_real(t):
+
     def ineq_constraint(self,guess_p_vector):
+        """
+        A constraint - finds the minimum item in the probability distribution
+        
+        Parameters:
+        -----------
+        guess_p_vector
+            the supplied probability distribution
+        
+        Return
+        -----------
+        np.min(guess_p_vector)
+            objective function output that must satisfy constraint
+        """            
         guess_p_vector = 10**guess_p_vector
         return np.min(guess_p_vector)
     
@@ -160,6 +291,21 @@ class Simulation:
         return -1 * self.kB * self.Temp * np.log((x))
     
     def stationary_distribution(self, concentration, guess_init):
+        """
+        Numerically solve for the stationary distribution given an initial guess probability distribution and a specified antibody concentration.
+        
+        Parameters:
+        -----------
+        concentration
+            stationary distribution is defined for a given concentration value
+        guess_init
+            initial probability distribution that will be numerically adjusted until it satisfies stationarity
+        
+        Return
+        -----------
+        10**xopt.x
+            result of the optimization process - stationary distribution and its associated score
+        """              
         self.concentration = concentration
         transitionRateMatrix = self.trm(self.k_on * concentration, self.k_off)
         Tx = transitionRateMatrix
@@ -179,9 +325,6 @@ class Simulation:
 #         xopt = opt.basinhopping(self.get_stationary_dist, guess_init, 
 #             T=1e-8, stepsize=0.05, disp=False, niter=1,interval=10,
 #             minimizer_kwargs = {"args": (Q), "method": "SLSQP","constraints":cons})
-    
-
-#         ipdb.set_trace()
 #         if np.round(np.sum(xopt.x),5) != 1:
 
         return 10**xopt.x#soln[3]#
@@ -231,10 +374,24 @@ class Simulation:
         calcd_ps = (exp_energies*np.exp(-1*self.chem_pot/(self.kB * self.Temp))*(1)) / partition_function
         errors = np.abs(calcd_ps - self.equilibrium_p_dist)
         sse = np.sum(errors)
-        #         ipdb.set_trace()
         return sse
 
     def solve_partition_function(self, equilibrium_p_dist,verbose=True):
+        """
+        Numerically solve for the partition function given an input stationary probability distribution.
+        
+        Parameters:
+        -----------
+        equilibrium_p_dist
+            stationary distribution for a particular set of system conditions
+                
+        Return
+        -----------
+        final_partition_function
+            thermodynamic normalization factor for the stationary distribution
+        final_energies
+            corresponding energies of each state for the stationary distribution
+        """            
         self.equilibrium_p_dist = equilibrium_p_dist
         self.chem_pot = self.particle_count_key.T[0]*self.mu_mono*self.equilibrium_p_dist + self.particle_count_key.T[1]*self.mu_biv*self.equilibrium_p_dist
         guess_energies = equilibrium_p_dist * 10 ** -18
@@ -273,6 +430,20 @@ class Simulation:
     ### TRANSIENT CALCULATIONS ###
 
     def SPR_run(self):
+        """
+        Main simulation function that starts from an initial condition probability distribution.
+        Takes Markov steps in time using the method of uniformized transition matrix to compute transient evolution of probability distribution.
+        Produces a stratified visualization of the different states, their associated probabilities, and how they change with time.
+        Also produces a stratified visualization of occupancy, i.e. each state's contribution to the SPR signal.
+        
+        Results produced:
+        ----------
+        self.occupancy 
+            occupancy information at each time point for each state
+        self.probability_vectors 
+            probability of each state at each time point
+        
+        """          
         # set the variable parameter where it belongs based on what is happening
 
         rate_on_0 = self.k_on
@@ -402,7 +573,6 @@ class Simulation:
         return 0
 
     def SPR_run_advanced(self):
-            # set the variable parameter where it belongs based on what is happening
 
             rate_on_0 = self.k_on
             rate_off_0 = self.k_off
